@@ -1,0 +1,16 @@
+{
+    "name": "pulumi-llm-infra-platform",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/jest": "^30.0.0",
+        "@types/node": "^18",
+        "jest": "^30.0.5",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^7.1.0",
+        "@pulumi/awsx": "^3.0.0",
+        "@pulumi/pulumi": "^3.185.0"
+    }
+}

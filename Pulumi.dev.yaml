@@ -1,0 +1,10 @@
+config:
+  aws:region: us-east-1
+  project:env: dev
+  openai:apiKey:
+    secure: AAABAMZqTlLLwYvKXdKOwwC69YfZ8qOJsxqPRRgqhUEAabAVkrgyUq5Vi4VRLK/o2gnBgjTY75qopt/Ws6ZnNlKPIfytOEgTDsZ9bbri599LAJX/I7cezFAANqEKR1K+VftYQQsPLZPc9i8xzInFGLHsTtpxIX2LObvUro+x2JisKKvXbFCw9a6YIDtHZPRAvlccGtdusyKYeGKGPD5xy52/dCN6ECDZRaYyPy2X+VjpZrdr/LYR732pAl9xDMktuPR/3Q==
+  app:image: nginx:latest
+  app:cpu: "256"
+  app:memory: "512"
+  app:apiKey:
+    secure: AAABADuX66rWRHRA12/KLbdlNBnQLn8Njlb6RYWXYdIzQGBScv6+dAUEFTv4oMzyWzIueLrcxWFB+cfUOTRMveBXrlBwvEfuaj2DNw==
