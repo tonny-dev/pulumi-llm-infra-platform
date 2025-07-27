@@ -174,7 +174,7 @@ MIT License — free to use, modify, and distribute.
 
 ## ✨ Author
 
-Built with ❤️ by [Tonny](https://github.com/your-github)
+Built with ❤️ by [Tonny](https://github.com/tonny-dev)
 
 ```
 
