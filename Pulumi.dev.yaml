@@ -8,3 +8,6 @@ config:
   app:memory: "512"
   app:apiKey:
     secure: AAABADuX66rWRHRA12/KLbdlNBnQLn8Njlb6RYWXYdIzQGBScv6+dAUEFTv4oMzyWzIueLrcxWFB+cfUOTRMveBXrlBwvEfuaj2DNw==
+  project:name: llm-platform
+  app:desiredCount: "1"
+  app:enableGpu: "false"

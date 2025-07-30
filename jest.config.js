@@ -1,8 +1,21 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-import { logsBucket } from "../infra/s3";
-
-test("Bucket should have versioning enabled", async () => {
-  const versioning = await logsBucket.versioning;
-  expect(versioning?.enabled).toBe(true);
-});
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/tests'],
+  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  transform: {
+    '^.+\\.ts$': 'ts-jest',
+  },
+  collectCoverageFrom: [
+    'infra/**/*.ts',
+    '!infra/**/*.d.ts',
+    '!**/node_modules/**',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  testTimeout: 30000,
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/$1',
+  },
+};

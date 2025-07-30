@@ -1,16 +1,134 @@
 {
-    "name": "pulumi-llm-infra-platform",
-    "main": "index.ts",
-    "devDependencies": {
-        "@types/jest": "^30.0.0",
-        "@types/node": "^18",
-        "jest": "^30.0.5",
-        "ts-node": "^10.9.2",
-        "typescript": "^5.8.3"
-    },
-    "dependencies": {
-        "@pulumi/aws": "^7.1.0",
-        "@pulumi/awsx": "^3.0.0",
-        "@pulumi/pulumi": "^3.185.0"
-    }
+  "name": "pulumi-llm-infra-platform",
+  "version": "1.0.0",
+  "description": "Enterprise-grade LLM infrastructure platform using Pulumi and TypeScript",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "lint:check": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "pulumi:preview": "pulumi preview",
+    "pulumi:up": "pulumi up",
+    "pulumi:destroy": "pulumi destroy",
+    "pulumi:refresh": "pulumi refresh",
+    "pulumi:stack:init": "pulumi stack init",
+    "pulumi:stack:select": "pulumi stack select",
+    "pulumi:config:set": "pulumi config set",
+    "pulumi:config:get": "pulumi config",
+    "webapp:dev": "cd webapp && npm run dev",
+    "webapp:build": "cd webapp && npm run build",
+    "webapp:preview": "cd webapp && npm run preview",
+    "docker:build": "docker build -t llm-infra-platform .",
+    "docker:run": "docker run -p 3000:3000 llm-infra-platform",
+    "security:audit": "npm audit --audit-level moderate",
+    "security:fix": "npm audit fix",
+    "docs:generate": "typedoc --out docs src",
+    "clean": "rm -rf dist coverage docs node_modules/.cache",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "pulumi",
+    "aws",
+    "typescript",
+    "llm",
+    "infrastructure",
+    "iac",
+    "ecs",
+    "fargate",
+    "s3",
+    "vpc",
+    "devops",
+    "cloud",
+    "automation"
+  ],
+  "author": "Tonny <tonny@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tonny-dev/pulumi-llm-infra-platform.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tonny-dev/pulumi-llm-infra-platform/issues"
+  },
+  "homepage": "https://github.com/tonny-dev/pulumi-llm-infra-platform#readme",
+  "dependencies": {
+    "@pulumi/aws": "^6.15.0",
+    "@pulumi/pulumi": "^3.95.0",
+    "@pulumi/awsx": "^2.4.0",
+    "@pulumi/docker": "^4.5.0",
+    "aws-sdk": "^2.1500.0",
+    "@aws-sdk/client-cloudwatch": "^3.450.0",
+    "@aws-sdk/client-ecs": "^3.450.0",
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/client-secrets-manager": "^3.450.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "joi": "^17.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "@types/jest": "^29.5.8",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "eslint": "^8.53.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "prettier": "^3.0.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2",
+    "typedoc": "^0.25.4",
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "collectCoverageFrom": [
+      "infra/**/*.ts",
+      "!infra/**/*.d.ts",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "testTimeout": 30000
+  }
 }

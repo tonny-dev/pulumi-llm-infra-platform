@@ -1,0 +1,261 @@
+name: LLM Infrastructure CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  PULUMI_VERSION: '3.95.0'
+
+jobs:
+  test:
+    name: Test Infrastructure Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd webapp && npm ci
+        
+    - name: Run TypeScript compilation
+      run: |
+        npm run build
+        cd webapp && npm run build
+        
+    - name: Run unit tests
+      run: |
+        npm test -- --coverage
+        cd webapp && npm test -- --coverage
+        
+    - name: Run linting
+      run: |
+        npm run lint
+        cd webapp && npm run lint
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: infrastructure
+        
+    - name: Upload webapp coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./webapp/coverage/lcov.info
+        flags: webapp
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level moderate
+        cd webapp && npm audit --audit-level moderate
+        
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  preview:
+    name: Pulumi Preview
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup Pulumi CLI
+      uses: pulumi/actions@v4
+      with:
+        pulumi-version: ${{ env.PULUMI_VERSION }}
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Pulumi Preview
+      uses: pulumi/actions@v4
+      with:
+        command: preview
+        stack-name: dev
+        comment-on-pr: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd webapp && npm ci
+        
+    - name: Build webapp
+      run: cd webapp && npm run build
+      
+    - name: Setup Pulumi CLI
+      uses: pulumi/actions@v4
+      with:
+        pulumi-version: ${{ env.PULUMI_VERSION }}
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Deploy infrastructure
+      uses: pulumi/actions@v4
+      with:
+        command: up
+        stack-name: dev
+        upsert: true
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        
+    - name: Deploy webapp to S3
+      run: |
+        aws s3 sync webapp/dist/ s3://${{ secrets.WEBAPP_BUCKET_NAME }}/ --delete
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd webapp && npm ci
+        
+    - name: Build webapp
+      run: cd webapp && npm run build
+      
+    - name: Setup Pulumi CLI
+      uses: pulumi/actions@v4
+      with:
+        pulumi-version: ${{ env.PULUMI_VERSION }}
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_PROD_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_PROD_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+        
+    - name: Deploy infrastructure
+      uses: pulumi/actions@v4
+      with:
+        command: up
+        stack-name: prod
+        upsert: true
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        
+    - name: Deploy webapp to S3
+      run: |
+        aws s3 sync webapp/dist/ s3://${{ secrets.PROD_WEBAPP_BUCKET_NAME }}/ --delete
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.PROD_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Install k6
+      run: |
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+        
+    - name: Run performance tests
+      run: |
+        k6 run --out json=results.json tests/performance/load-test.js
+        
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: results.json
